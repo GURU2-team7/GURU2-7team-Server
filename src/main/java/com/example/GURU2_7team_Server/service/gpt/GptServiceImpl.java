@@ -1,11 +1,8 @@
-package likelion12th.centerthon.service.gpt;
+package com.example.GURU2_7team_Server.service.gpt;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import likelion12th.centerthon.service.history.domain.GptHistory;
-import likelion12th.centerthon.service.history.repository.HistoryRepository;
-import likelion12th.centerthon.service.info.repository.InfoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -17,9 +14,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class GptServiceImpl implements GptService {
-
-    private final HistoryRepository historyRepository;
-    private final InfoRepository infoRepository;
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -78,69 +72,5 @@ public class GptServiceImpl implements GptService {
         String content = jsonNode.path("choices").get(0).path("message").path("content").asText();
 
         return ResponseEntity.status(HttpStatus.OK).body(content);
-    }
-
-    // 질문 / 답변 내역 저장
-    @Override
-    public void saveQnaHist(String question, String answer) {
-        GptHistory gptHistory = new GptHistory();
-        gptHistory.saveHist(question, answer);
-        historyRepository.save(gptHistory);
-    }
-
-    // 추천 키워드 랜덤 추출
-    @Override
-    public List<String> getRecommendKeyword() {
-
-        ArrayList<String> keywordList = new ArrayList<>();
-        // 게시판에 등록된 키워드 개수
-        Long keywordCount = infoRepository.count();
-
-        // keywordCount가 7개 보다 적은 경우 빈 리스트 반환
-        if (keywordCount < 7) {
-            return keywordList;
-        }
-
-        // 모든 키워드 ID를 미리 조회
-        List<Long> allKeywordIds = infoRepository.findAllIds(); // 이 메서드는 모든 키워드 ID를 반환한다고 가정합니다.
-
-        Random random = new Random();
-        Set<Long> selectedIds = new HashSet<>();
-        int maxKeywords = 7;
-
-        while (selectedIds.size() < maxKeywords) {
-            Long randomId = allKeywordIds.get(random.nextInt(allKeywordIds.size()));
-            if (selectedIds.add(randomId)) {
-                infoRepository.findById(randomId).ifPresent(keyword -> keywordList.add(keyword.getWord()));
-            }
-        }
-
-        return keywordList;
-//        ArrayList<String> keywordList = new ArrayList<>();
-//        // 게시판에 등록된 키워드 개수
-//        Long keywordCount = infoRepository.count();
-//        Random random = new Random();
-//
-//        // keywordCount가 7개 보다 적은 경우 빈 리스트 반환
-//        if (keywordCount < 7) {
-//            return keywordList;
-//        }
-//
-//        // 중복 확인을 위한 해시셋
-//        Set<Integer> selectedIds = new HashSet<>();
-//
-//        // 필요한 키워드 개수
-//        int maxKeywords = 7;
-//
-//        while (selectedIds.size() < maxKeywords) {
-//            // 1부터 keywordCount 사이의 랜덤 숫자 생성
-//            Integer keywordId = random.nextInt(keywordCount.intValue()) + 1;
-//            // 랜덤 추출 id 중복 확인
-//            if (selectedIds.add(keywordId)) {
-//                keywordList.add(infoRepository.getById(keywordId.longValue()).getWord());
-//            }
-//        }
-//
-//        return keywordList;
     }
 }

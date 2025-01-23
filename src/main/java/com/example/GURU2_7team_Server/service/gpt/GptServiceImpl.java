@@ -1,5 +1,7 @@
 package com.example.GURU2_7team_Server.service.gpt;
 
+import com.example.GURU2_7team_Server.service.dto.recipe.RecipeRequestDto;
+import com.example.GURU2_7team_Server.service.dto.recipe.RecipeResponseDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,16 +22,27 @@ public class GptServiceImpl implements GptService {
 
     // gpt 사용 상황 설정
     private String systemMsg =
-            "I'm going to use it as a translator to interpret sentences containing new words or memes used by the younger generation called the Mz generation these days.";
+            "제공한 정보를 바탕으로 요리 레시피를 추천해주는 상황";
 
-    public JsonNode callChatGpt(String question) throws JsonProcessingException {
+    public JsonNode callChatGpt(RecipeRequestDto requestDto) throws JsonProcessingException {
         final String url = "https://api.openai.com/v1/chat/completions";
 
-        String script = question
-                    + " 뭐야?"
-                    + "위의 문장은 요즘 mz세대 / 알파세대라고 불리는 젊은 세대들이 사용하는 신조어, 밈 등이 포함된 문장 또는 단어입니다. "
-                    + "각 단어별로 끊어서 해석 후 이를 참고하여 150자 내로 요약해서 제시해 주세요. 답변은 단어별 해석을 제외한 요약한 문장만을 출력해 주세요. "
-                    + "최종 문장에 큰따옴표가 있다면 작은따옴표로 변경해 주세요.";
+        // 사용자 요청 정보 불러오기
+        String allergy = requestDto.getAllergy();
+        String typeOfCooking = requestDto.getTypeOfCooking();
+        String ingredients = requestDto.getIngredients();
+        String cookingMethod = requestDto.getCookingMethod();
+        String cookingTime = requestDto.getCookingTime();
+
+        // 요청 스크립트 작성
+        String script =
+                ingredients + "만을 재료로 " + cookingMethod + "을 사용하여 " +
+                cookingTime + "이내의 1~2인분 " + typeOfCooking + "레시피를" +
+                "해당 요리를 먹을 사람들은 " + allergy + " 알러지가 있으니 참고해서 추천해줘.\n" +
+                "출력 형식: " +
+                "요리명, 사용될 재료 및 재료의 양, 레시피 순서(인덱스 적용), 해당 요리의 칼로리, 해당 요리의 영양성분명, 소요 시간\n" +
+                "이 항목들의 제목은 쓰지말고 내용만 \"#\"이 문자를 통해 구분해줘. 이 항목외에 다른 설명은 출력하지 말아줘." +
+                "영양성분은 영양성분명만을 \",\" 이문자를 써서 구분해줘.";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -67,10 +80,22 @@ public class GptServiceImpl implements GptService {
 
     // callChatGpt()가 반환한 JsonNode 객체에서 ChatGPT의 응답 값만 Body 값으로 출력
     @Override
-    public ResponseEntity<?> getAssistantMsg(String userMsg) throws JsonProcessingException {
-        JsonNode jsonNode = callChatGpt(userMsg);
-        String content = jsonNode.path("choices").get(0).path("message").path("content").asText();
+    public RecipeResponseDto getAssistantMsg(RecipeRequestDto requestDto) throws JsonProcessingException {
+        JsonNode jsonNode = callChatGpt(requestDto);
+        String response = jsonNode.path("choices").get(0).path("message").path("content").asText();
 
-        return ResponseEntity.status(HttpStatus.OK).body(content);
+        String[] answers = response.split("#");
+
+        RecipeResponseDto answerDto = RecipeResponseDto.builder()
+                .nameOfDish(answers[0])
+                .recipe(answers[1])
+                .calorie(answers[2])
+                .nutrient(answers[3])
+                .cookingTime(answers[4])
+                .build();
+
+        System.out.println("Response from GPT: " + response);
+
+        return answerDto;
     }
 }

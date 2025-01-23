@@ -9,8 +9,8 @@ public class RecipeResponseDto {
 
     String nameOfDish;
     String ingredients;
-    String cookingTime;
     String recipe;
     String calorie;
     String nutrient;
+    String cookingTime;
 }

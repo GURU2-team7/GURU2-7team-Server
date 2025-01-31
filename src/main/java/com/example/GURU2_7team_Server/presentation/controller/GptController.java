@@ -17,15 +17,18 @@ public class GptController {
 
     // 레시피 요청
     @PostMapping("/askRecipe")
-    public ResponseEntity<Object> getAssistantMsg(RecipeRequestDto requestDto) {
+    public ResponseEntity<Object> getAssistantMsg(@RequestBody RecipeRequestDto requestDto) {
         try {
             RecipeResponseDto answerDto = gptService.getAssistantMsg(requestDto);
             return ResponseEntity.ok(answerDto);
 
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+        } catch (JsonProcessingException e) { // 요청에 실패한 경우
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body("응답을 가져오지 못했습니다.");
+
+        } catch (IllegalArgumentException e) { // 모든 항목에 대한 응답을 받지 못한 경우
+            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                    .body("모든 항목에 대한 응답을 받지 못했습니다.");
         }
     }
 }

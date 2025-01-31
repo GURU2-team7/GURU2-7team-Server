@@ -8,6 +8,7 @@ class Guru27teamServerApplicationTests {
 
 	@Test
 	void contextLoads() {
+		System.out.println();
 	}
 
 }
